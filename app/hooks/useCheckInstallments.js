@@ -13,7 +13,7 @@ const useCheckInstallments = () => {
   const [result, setResult] = useState(null);
   const { user } = useUser();
 
-  const checkInstallments = useCallback(async () => {
+  const checkInstallments = useCallback(async () =>{
     if (!user || !user.id) {
       setError('User not logged in');
       return;
