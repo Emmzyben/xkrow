@@ -94,7 +94,7 @@ const Register = () => {
             containerButtonStyle={{ marginRight: 10 }}
           />
           <TextInput
-            style={styles.input}
+            style={styles.input10}
             placeholder="Phone number"
             keyboardType="phone-pad"
             value={phone}

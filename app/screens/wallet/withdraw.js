@@ -1,18 +1,61 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert ,ScrollView} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
-import useCreateTransfer from '../../hooks/useCreateTransfer'; // Adjust the path as needed
-import styles from '../../styles/style'; // Assuming styles are defined here
-import BankSelect from '../../components/BankSelect'; // Adjust the path as needed
+import useCreateTransfer from '../../hooks/useCreateTransfer';
+import styles from '../../styles/style';
+import BankSelect from '../../components/BankSelect';
+import useGetApi from '../../hooks/useGetapi';
 
 const Withdraw = ({ navigation }) => {
   const [bankCode, setBankCode] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [accountName, setAccountName] = useState('');
   const [amount, setAmount] = useState('');
-
+  const [loadingAccount, setLoadingAccount] = useState(false); 
+  const { ApiKey, loading: apiLoading, apierror } = useGetApi(); 
   const { createTransfer, loading, error, result } = useCreateTransfer();
+
+  useEffect(() => {
+    console.log('Fetched ApiKey:', ApiKey);
+  }, [ApiKey]);
+
+  // Function to handle account lookup
+  const handleAccountLookup = async () => {
+    if (bankCode && accountNumber) {
+      setLoadingAccount(true);
+      console.log('Account Lookup Payload:', { bank_code: bankCode, account_number: accountNumber });
+  
+      try {
+        const response = await fetch(`https://nubapi.com/api/verify?account_number=${accountNumber}&bank_code=${bankCode}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer dqcefCCG3UQ69laZ6d1kiSos2AW4X2ocUhd2TBDW66245e20`,
+          }
+        });
+  
+        const data = await response.json();
+        console.log('Account Lookup Response:', data);
+  
+        // Check 'status' inside 'data' instead of response.status
+        if (data.status === 200) {
+          setAccountName(data.account_name);
+        } else {
+          Alert.alert('Error', 'Account lookup failed. Please check your details.');
+        }
+      } catch (error) {
+        console.log('Account Lookup Error:', error);
+        Alert.alert('Error', 'Something went wrong during account lookup.');
+      } finally {
+        setLoadingAccount(false);
+      }
+    } else {
+      Alert.alert('Validation Error', 'Please enter both bank code and account number.');
+    }
+  };
+  
+  
 
   const handleConfirm = async () => {
     if (bankCode && accountNumber && accountName && amount) {
@@ -21,24 +64,25 @@ const Withdraw = ({ navigation }) => {
       Alert.alert('Validation Error', 'Please fill all fields.');
     }
   };
-
   useEffect(() => {
     if (result) {
-      Alert.alert('Success', 'Transfer Successful!');
+      Alert.alert('Success', 'Withdrawal Successful!');
+      navigation.navigate('Wallet');
     }
   }, [result]);
-
+  
   useEffect(() => {
     if (error) {
       Alert.alert('Error', error);
     }
   }, [error]);
-
+  
+  
   return (
     <ScrollView>
       <View style={styless.container}>
         <TouchableOpacity
-          onPress={() => navigation.navigate('Wallet')}
+          onPress={() => navigation.navigate('Landing')}
           style={styless.button}
         >
           <FontAwesomeIcon icon={faArrowLeft} size={19} />
@@ -55,22 +99,36 @@ const Withdraw = ({ navigation }) => {
       </View>
 
       <View style={{ padding: 20 }}>
-        <Text style={styles.text5}>Account Name</Text>
-        <TextInput
-          value={accountName}
-          onChangeText={setAccountName}
-          keyboardType='default'
-          style={styles.input}
-        />
+        <Text style={styles.text5}>Bank Name</Text>
+        <BankSelect selectedBank={bankCode} onBankChange={setBankCode} />
+        
         <Text style={styles.text5}>Account No.</Text>
         <TextInput
           value={accountNumber}
           onChangeText={setAccountNumber}
           keyboardType='numeric'
           style={styles.input}
+          onBlur={handleAccountLookup} 
         />
-        <Text style={styles.text5}>Bank Name</Text>
-        <BankSelect selectedBank={bankCode} onBankChange={setBankCode} />
+       
+        <Text style={styles.text5}>Account Name</Text>
+        <View style={styless.inputWithLoader}>
+          <TextInput
+            value={accountName}
+            onChangeText={setAccountName}
+            keyboardType='default'
+            style={[styles.input, { paddingRight: 40 }]} 
+            editable={false} 
+          />
+          {loadingAccount && (
+            <ActivityIndicator
+              size="small"
+              color="#0000ff"
+              style={styless.loadingIndicator}
+            />
+          )}
+        </View>
+
         <Text style={styles.text5}>Amount</Text>
         <TextInput
           value={amount}
@@ -113,14 +171,23 @@ const styless = StyleSheet.create({
     color: '#141414',
   },
   confirmButton: {
-    backgroundColor: 'rgba(98, 36, 143, 1)', // Desired background color
+    backgroundColor: 'rgba(98, 36, 143, 1)',
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
   },
   confirmButtonText: {
-    color: '#fff', // Text color
+    color: '#fff', 
     fontSize: 16,
+  },
+  inputWithLoader: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  loadingIndicator: {
+    position: 'absolute',
+    right: 200,
+    top: 25,
   },
 });
 

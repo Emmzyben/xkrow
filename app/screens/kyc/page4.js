@@ -64,7 +64,7 @@ const Page4 = ({ navigation }) => {
     if (!result.cancelled) {
       setFile(result.assets[0]);
       setFileURL(result.assets[0].uri);
-      setImage(result.assets[0].uri); // Make sure image is set to the correct URI
+      setImage(result.assets[0].uri); 
     }
   };
 

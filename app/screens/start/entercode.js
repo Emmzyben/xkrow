@@ -152,7 +152,7 @@ const EnterCode = () => {
         await database.deleteDocument(DATABASE_ID, VERIFICATION, document.$id);
 
         setLoading(false);
-        navigation.navigate('Landing'); 
+        navigation.navigate('AdvertVideo'); 
       } else {
         setLoading(false);
         setError('Invalid verification code');

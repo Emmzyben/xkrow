@@ -11,6 +11,7 @@ import Forgot from '../screens/start/forgot';
 import Landing from '../screens/start/landing';
 import EnterCode from '../screens/start/entercode';
 import EnterCode1 from '../screens/start/entercode1';
+import AdvertVideo from '../screens/start/advertVideo';
 // Buyer pages
 import Buyer1 from '../screens/buyer/buyer1';
 import Buyer2 from '../screens/buyer/buyer2';
@@ -83,6 +84,7 @@ const StackNavigator = () => {
           <Stack.Screen name="Landing" component={Landing} />
           <Stack.Screen name="EnterCode" component={EnterCode} />
           <Stack.Screen name="EnterCode1" component={EnterCode1} />
+          <Stack.Screen name="AdvertVideo" component={AdvertVideo} />
            {/*main profiles*/}
            <Stack.Screen name="Mainpage" component={Mainpage} />
           <Stack.Screen name="Biopage" component={Biopage} />

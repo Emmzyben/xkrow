@@ -1,91 +1,75 @@
-import React, { useState } from 'react';
-import { Text, TouchableOpacity, TextInput, Alert, View } from 'react-native';
+import React, { useState,useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { useUser } from '../../backend/user';
 import useFundWallet from '../../hooks/useFundWallet';
-import FundSuccess from '../../components/fundSucess';
+import FundSuccess from '../../components/fundSuccess';
 import Failure3 from '../../components/failure3';
-import { PAYSTACK_PUBLIC_KEY } from '@env';
-import { Paystack } from 'react-native-paystack-webview';
 import styles from '../../styles/style';
+import { PayWithFlutterwave } from 'flutterwave-react-native';
+import useGetApi from '../../hooks/useGetapi'
+
+
+ 
+
 
 const Fund = ({ navigation }) => {
   const [amount, setAmount] = useState('');
   const [paymentStatus, setPaymentStatus] = useState(null);
-  const [showPaystack, setShowPaystack] = useState(false);
-  const { user } = useUser(); 
-  const { fundWallet, loading, error } = useFundWallet();
+  const { user } = useUser();
+  const { fundWallet, loading: fundLoading } = useFundWallet();
+  const { ApiKey, loading: apiLoading, error } = useGetApi(); 
 
-  const callpaystack = () => {
-    if (parseFloat(amount) <= 0) {
-      Alert.alert('Invalid Amount', 'Please enter a valid amount to fund.');
+
+  useEffect(() => {
+    console.log('Fetched ApiKey:', ApiKey);
+  }, [ApiKey]);
+
+  
+  const handleOnRedirect = async (data) => {
+    console.log('Payment redirect data:', data);
+    if (data.status === 'successful') {
+      try {
+        await fundWallet(parseFloat(amount));
+        setPaymentStatus('success');
+        console.log('Wallet funded successfully');
+      } catch (err) {
+        console.error('Error during fund wallet:', err);
+        setPaymentStatus('failure');
+      }
+    } else {
+      setPaymentStatus('failure');
+    }
+  };
+
+  const generateTransactionRef = (length) => {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return `flw_tx_ref_${result}`;
+  };
+
+  const handleInitiatePayment = () => {
+    if (!amount) {
+      Alert.alert('Error', 'Please enter an amount');
       return;
     }
-    if (!user?.email || !validateEmail(user.email)) {
-      Alert.alert('Invalid Email', 'Please enter a valid email.');
-      return;
-    }
-    setShowPaystack(true);
-  };
-
-  const validateEmail = (email) => {
-    const re = /\S+@\S+\.\S+/;
-    return re.test(email);
-  };
-
-  const Pay = () => (
-    <View style={{ flex: 1 }}>
-      <Paystack
-        paystackKey={PAYSTACK_PUBLIC_KEY}
-        amount={parseFloat(amount)} // Convert to kobo
-        billingEmail={user.email}
-        activityIndicatorColor="green"
-        onCancel={() => {
-          setPaymentStatus('failure');
-          setShowPaystack(false);
-        }}
-        onSuccess={async () => {
-          try {
-            await fundWallet(parseFloat(amount));
-            setPaymentStatus('success');
-          } catch (err) {
-            console.error('Error funding wallet:', err);
-            setPaymentStatus('failure');
-          }
-          setShowPaystack(false);
-        }}
-        autoStart={true}
-      />
-    </View>
-  );
-
-  const handleClose = () => {
-    setPaymentStatus(null);
-    navigation.navigate('Wallet'); 
-  };
-
-  const handleClose2 = () => {
-    setPaymentStatus(null);
-    navigation.navigate('Fund'); 
   };
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: 'rgba(102, 112, 133, 1)', paddingTop: 40 }}>
-        <TouchableOpacity onPress={() => navigation.navigate('Wallet')} style={{ position: 'absolute', top: 40, left: 30, zIndex: 10000 }}>
+      <View style={styless.container}>
+        <TouchableOpacity onPress={() => navigation.navigate('Landing')} style={styless.button}>
           <FontAwesomeIcon icon={faArrowLeft} size={19} />
         </TouchableOpacity>
-        <Text style={{ textAlign: 'center', fontSize: 15.3, lineHeight: 18.52, fontWeight: '700', color: '#141414' }}>Fund Wallet</Text>
+        <Text style={styless.title}>Withdraw</Text>
       </View>
 
       <View style={{ padding: 20 }}>
-        <Text style={styles.text4}>Pay with your card</Text>
-        <Text style={styles.text7}>Enter amount to continue</Text>
-      </View>
-
-      <View style={{ padding: 20 }}>
-        <Text style={styles.text5}>Enter Amount to fund</Text>
+        <Text style={styles.text4}>Enter amount to continue</Text>
         <TextInput
           value={amount}
           keyboardType="number-pad"
@@ -94,18 +78,57 @@ const Fund = ({ navigation }) => {
         />
       </View>
 
-      <View style={styles.lastDown1}>
-        <TouchableOpacity style={styles.btn} onPress={callpaystack} disabled={loading}>
-          <Text style={{ color: '#fff', textAlign: 'center' }}>{loading ? 'Processing...' : 'Fund With Paystack'}</Text>
-        </TouchableOpacity>
-      </View>
+      {amount && ApiKey ? (
+  <PayWithFlutterwave
+    onRedirect={handleOnRedirect}
+    options={{
+      tx_ref: generateTransactionRef(10),
+      authorization: ApiKey, // Ensure this is correctly fetched
+      customer: {
+        email: user.email,
+      },
+      amount: parseFloat(amount),
+      currency: 'NGN',
+      payment_options: "card, ussd, banktransfer",
+    }}
+    customButton={(props) => (
+      <TouchableOpacity style={styles.btn} onPress={props.onPress}>
+        <Text style={{ color: '#fff', textAlign: 'center' }}>Fund Wallet</Text>
+      </TouchableOpacity>
+    )}
+  />
+) : (
+  <TouchableOpacity style={styles.btn} onPress={() => Alert.alert('Enter an amount')}>
+    <Text style={{ color: '#fff', textAlign: 'center' }}>Fund Wallet</Text>
+  </TouchableOpacity>
+)}
 
-      {showPaystack && <Pay />}
-
-      {paymentStatus === 'success' && <FundSuccess onClose={handleClose} />}
-      {paymentStatus === 'failure' && <Failure3 onClose={handleClose2} />}
+      {paymentStatus === 'success' && <FundSuccess onClose={() => navigation.navigate('Wallet')} />}
+      {paymentStatus === 'failure' && <Failure3 onClose={() => navigation.navigate('Wallet')} />}
     </View>
   );
 };
 
 export default Fund;
+
+const styless = StyleSheet.create({
+  container: {
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(102, 112, 133, 1)',
+    paddingTop: 40,
+  },
+  button: {
+    position: 'absolute',
+    top: 40,
+    left: 30,
+    zIndex: 1000,
+  },
+  title: {
+    textAlign: 'center',
+    fontSize: 15.3,
+    lineHeight: 18.51,
+    fontWeight: '700',
+    color: '#141414',
+  },
+});

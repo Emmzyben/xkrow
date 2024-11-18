@@ -128,7 +128,6 @@ const Chatbox = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff'
   },
   innertext: {
     color: '#fff',
@@ -144,7 +143,6 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(102, 112, 133, 1)',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     zIndex: 1,
     paddingTop: 35
   },
@@ -171,7 +169,8 @@ const styles = StyleSheet.create({
     padding: 10,
     display: 'flex',
     flexDirection: 'row',
-    justifyContent: 'space-between'
+    justifyContent: 'space-around',
+    backgroundColor:'#fff',margin:7,borderRadius:10
   },
   itemHeader: {
     flexDirection: 'row',

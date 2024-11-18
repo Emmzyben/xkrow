@@ -19,7 +19,7 @@ const fetchUserProfiles = async (userIds) => {
     const profileQuery = await database.listDocuments(
       DATABASE_ID,
       COLLECTION_ID_PROFILE,
-      [Query.equal('$id', userIds)]
+      [Query.equal('user_id', userIds)]
     );
 
     const profiles = profileQuery.documents.reduce((acc, profile) => {
@@ -116,6 +116,7 @@ const ChatScreen = ({ route }) => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userProfiles, setUserProfiles] = useState({});
+  const [otherParticipantName, setOtherParticipantName] = useState('');
 
   const createMessageNotify = useCreateMessageNotify();
 
@@ -141,7 +142,7 @@ const ChatScreen = ({ route }) => {
         createdAt: new Date(doc.createdAt),
         user: {
           _id: doc.userId,
-          name: profiles[doc.userId] || 'Username',
+          name: profiles[doc.userId] || '',
         },
         image: doc.image || null,
         video: doc.video || null,
@@ -164,12 +165,46 @@ const ChatScreen = ({ route }) => {
       return null;
     }
   }, [conversationId]);
+  const fetchparticipant = useCallback(async () => {
+    try {
+      // Fetch conversation details
+      const conversation = await database.getDocument(DATABASE_ID, COLLECTION_ID_CONVERSATIONS, conversationId);
+      console.log('Conversation participants:', conversation.participants);
+      console.log('Logged-in user ID:', user.id);
+      if (!conversation || !conversation.participants) return;
   
+      // Find the participant who is not the logged-in user
+      const otherParticipantId = conversation.participants.find((participant) => participant !== user.id);
+  
+      // Fetch the other participant's profile
+      if (otherParticipantId) {
+        const profiles = await fetchUserProfiles([otherParticipantId]);
+        const otherParticipantName = profiles[otherParticipantId];
+        return { otherParticipantName };
+      } else {
+        console.error('No other participant found.');
+      }
+    } catch (error) {
+      console.error('Error fetching conversation or participant:', error);
+    }
+  
+    return { otherParticipantName: '' };
+  }, [conversationId, user]);
+
+
 
   useEffect(() => {
     fetchMessages();
   }, [fetchMessages]);
-
+  useEffect(() => {
+    const getConversation = async () => {
+      const { otherParticipantName } = await fetchparticipant();
+      setOtherParticipantName(otherParticipantName);
+    };
+  
+    getConversation();
+  }, [fetchparticipant]);
+  
   const onSend = useCallback(async (messages = []) => {
     if (messages.length === 0) return;
 
@@ -227,12 +262,13 @@ const ChatScreen = ({ route }) => {
 
   return (
     <View style={styles.container}>
-     <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('Chatbox')} style={styles.backButton}>
-          <FontAwesomeIcon icon={faArrowLeft} size={19} />
-        </TouchableOpacity>
-        <Text style={styles.headerText}>Conversation</Text>
-      </View>
+    <View style={styles.header}>
+  <TouchableOpacity onPress={() => navigation.navigate('Chatbox')} style={styles.backButton}>
+    <FontAwesomeIcon icon={faArrowLeft} size={19} />
+  </TouchableOpacity>
+  <Text style={styles.headerText}>{otherParticipantName || 'Conversation'}</Text>
+</View>
+
 
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />

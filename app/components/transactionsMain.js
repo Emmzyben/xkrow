@@ -2,47 +2,23 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, TouchableOpacity, Image, ActivityIndicator, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import styles from '../styles/style';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import useGetTransaction from '../hooks/useGetTransaction';
-import useCheckInstallments from '../hooks/useCheckInstallments'; // Import the new hook
+import useFetchTransactions from '../hooks/useFetchTransactions';
 
 const TransactionsMain = () => {
   const navigation = useNavigation();
-  const { transactions, loading, error, fetchTransactions } = useGetTransaction();
-  const { checkInstallments } = useCheckInstallments(); // Get the function from the hook
+  const { transactions, loading, error, refetch } = useFetchTransactions();
   const [intervalId, setIntervalId] = useState(null);
-
-  const fetchAndCheck = useCallback(async () => {
-    await fetchTransactions();
-    await checkInstallments();
-  }, [fetchTransactions, checkInstallments]);
 
   useFocusEffect(
     useCallback(() => {
-      fetchAndCheck(); // Initial call when component is focused
-
-      const id = setInterval(fetchAndCheck, 30000); // Interval to run fetchAndCheck every 10 seconds
-      setIntervalId(id);
-
-      return () => {
-        clearInterval(id); // Clear the interval on cleanup
-        setIntervalId(null);
-      };
-    }, [])
+      refetch(); // Initial fetch on focus
+  
+      const id = setInterval(refetch, 30000); // Refetch every 30 seconds
+  
+      return () => clearInterval(id); // Cleanup on unfocus
+    }, [refetch])
   );
-
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case 'completed':
-        return { color: 'green' };
-      case 'pending':
-        return { color: 'orange' };
-        case 'Installment paid':
-        return { color: 'green' };
-      default:
-        return { color: 'red' };
-    }
-  };
-
+  
   const formatDateTime = (dateString) => {
     const date = new Date(dateString);
     const optionsDate = { year: 'numeric', month: '2-digit', day: '2-digit' };
@@ -53,53 +29,54 @@ const TransactionsMain = () => {
   };
 
   const renderTransactionItem = ({ item }) => (
-    <TouchableOpacity
-      onPress={() => navigation.navigate('TransactionDetailsPage', { escrowLink: item.escrow_link })}
-      style={styles.transact}
-    >
+    <TouchableOpacity style={styles.transact}>
       <View>
-        <Text style={styles.text5}>{item.productName}</Text>
-        <Text style={styles.text7}>{formatDateTime(item.created_at)}</Text>
+        <Text style={styles.text5}>{item.transaction_type}</Text>
+        <Text style={styles.text7}>{formatDateTime(item.date)}</Text>
       </View>
       <View>
         <Text style={styles.text25}>₦{item.amount}</Text>
-        <Text style={[styles.statusText, getStatusStyle(item.status)]}>{item.status}</Text>
       </View>
     </TouchableOpacity>
   );
 
+  // Show loading or error if there is no transaction data
   if (loading && transactions.length === 0) {
-    return <ActivityIndicator size="large" color="#0000ff" />;
+    return (
+      <View style={localStyles.center}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
   }
 
   if (error) {
-    return <Text style={styles.errorText}>Error: {error.message}</Text>;
+    return (
+      <View style={localStyles.center}>
+        <Text style={styles.errorText}>{error.message || 'An error occurred while fetching transactions'}</Text>
+      </View>
+    );
   }
 
   return (
     <View style={localStyles.container}>
       <View style={localStyles.header}>
         <Text style={localStyles.headerText}>Transactions</Text>
-        
       </View>
 
       {transactions.length === 0 ? (
         <View style={localStyles.noTransactions}>
           <View style={localStyles.noTransactionsContent}>
             <Image source={require('../../assets/Group.png')} style={localStyles.noTransactionsImage} />
-            <Text style={styles.text7}>No transaction yet. Click New Xcrow to start transactions</Text>
+            <Text style={styles.text7}>No transactions yet</Text>
           </View>
         </View>
       ) : (
         <FlatList
           data={transactions}
           renderItem={renderTransactionItem}
-          keyExtractor={(item) => item.$id}
+          keyExtractor={(item) => item.$id || item.id.toString()}
           refreshControl={
-            <RefreshControl
-              refreshing={loading}
-              onRefresh={fetchTransactions}
-            />
+            <RefreshControl refreshing={loading} onRefresh={refetch} />
           }
         />
       )}
@@ -123,11 +100,6 @@ const localStyles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  viewAllText: {
-    color: '#62248F',
-    fontSize: 12,
-    fontWeight: '600',
-  },
   noTransactions: {
     flex: 1,
     alignItems: 'center',
@@ -141,12 +113,15 @@ const localStyles = StyleSheet.create({
   noTransactionsImage: {
     marginBottom: 20,
   },
-  statusText: {
-    // Default style if needed
-  },
   errorText: {
     color: 'red',
     fontSize: 12,
+    textAlign: 'center',
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

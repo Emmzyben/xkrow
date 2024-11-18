@@ -16,6 +16,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 5,
+  }, 
+  input10: {
+    width: '87%',
+    padding: 10,
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
   },
   input1: {
     width: '100%',
