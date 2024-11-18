@@ -49,7 +49,7 @@ const useFundWallet = () => {
       const transaction = {
         userId: user.id,
         date: new Date().toISOString(), 
-        transaction_type: 'fund',
+        transaction_type: 'Fund',
          amount: fundingAmount,
       };
 

@@ -79,7 +79,7 @@ const useCreateTransfer = () => {
         const transaction = {
           userId: user.id,
           date: new Date().toISOString(),
-          transaction_type: 'withdrawal', 
+          transaction_type: 'Withdrawal', 
           amount: transferAmount,
           
         };
@@ -95,7 +95,7 @@ const useCreateTransfer = () => {
         // Notify the user
         Alert.alert('Success', 'Withdrawal Successful!');
       } else {
-        setError(`Transfer failed with status: ${data.data.status || 'unknown'}`);
+        setError(`Transfer failed`);
         console.error(`Transfer failed with status: ${data.data.status}`);
       }
     } catch (error) {

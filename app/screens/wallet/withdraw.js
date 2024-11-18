@@ -139,14 +139,19 @@ const Withdraw = ({ navigation }) => {
       </View>
 
       <View style={styles.lastDown1}>
-        <TouchableOpacity
-          style={styless.confirmButton}
-          onPress={handleConfirm}
-        >
-          <Text style={styless.confirmButtonText}>Confirm</Text>
-        </TouchableOpacity>
-        {loading && <ActivityIndicator size="large" />}
-      </View>
+  <TouchableOpacity
+    style={[styless.confirmButton, loading && styless.buttonLoading]}
+    onPress={handleConfirm}
+    disabled={loading} // Disable button when loading
+  >
+    {loading ? (
+      <ActivityIndicator size="large" color="white" />
+    ) : (
+      <Text style={styless.confirmButtonText}>Confirm</Text>
+    )}
+  </TouchableOpacity>
+</View>
+
     </ScrollView>
   );
 };

@@ -13,7 +13,7 @@ const TransactionsMain = () => {
     useCallback(() => {
       refetch(); // Initial fetch on focus
   
-      const id = setInterval(refetch, 30000); // Refetch every 30 seconds
+      const id = setInterval(refetch, 60000); // Refetch every 30 seconds
   
       return () => clearInterval(id); // Cleanup on unfocus
     }, [refetch])
